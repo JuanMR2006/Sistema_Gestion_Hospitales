@@ -2,14 +2,16 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import IntegrityError
+from django.db.models import Q
 from django.http import JsonResponse
-from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
 from django.views import View
-from django.views.generic import ListView, UpdateView
+from django.views.generic import ListView
 
-from .forms import LoginForm, RegisterForm, UserUpdateForm
+from .forms import AdminUserForm, LoginForm, ProfileForm, RegisterForm, UserUpdateForm
 from .mixins import AdminRequiredMixin
 
 logger = logging.getLogger(__name__)
@@ -82,20 +84,85 @@ class RegisterView(View):
         return render(request, self.template_name, {'form': form})
 
 
+class ProfileView(LoginRequiredMixin, View):
+    template_name = 'users/profile.html'
+
+    def get(self, request):
+        form = ProfileForm(instance=request.user)
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request):
+        form = ProfileForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Perfil actualizado correctamente.')
+            return redirect(reverse('users:profile'))
+        return render(request, self.template_name, {'form': form})
+
+
 # ── Vistas de gestión de usuarios (solo admin) ────────────────────────────────
 
 class UserListView(AdminRequiredMixin, ListView):
     model = get_user_model()
     template_name = 'users/user_list.html'
     context_object_name = 'users'
-    ordering = ['last_name', 'first_name']
+    paginate_by = 10
+
+    def get_queryset(self):
+        qs = get_user_model().objects.all().order_by('last_name', 'first_name')
+        role = self.request.GET.get('role', '').strip()
+        is_active = self.request.GET.get('is_active', '').strip()
+        q = self.request.GET.get('q', '').strip()
+        if role:
+            qs = qs.filter(role=role)
+        if is_active in ('true', 'false'):
+            qs = qs.filter(is_active=(is_active == 'true'))
+        if q:
+            qs = qs.filter(
+                Q(first_name__icontains=q) |
+                Q(last_name__icontains=q) |
+                Q(email__icontains=q) |
+                Q(username__icontains=q)
+            )
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['roles'] = get_user_model().ROLE_CHOICES
+        ctx['current_filters'] = {
+            'role': self.request.GET.get('role', ''),
+            'is_active': self.request.GET.get('is_active', ''),
+            'q': self.request.GET.get('q', ''),
+        }
+        params = self.request.GET.copy()
+        params.pop('page', None)
+        ctx['filter_query_string'] = params.urlencode()
+        return ctx
 
 
-class UserUpdateView(AdminRequiredMixin, UpdateView):
-    model = get_user_model()
-    form_class = UserUpdateForm
-    template_name = 'users/user_update.html'
-    success_url = reverse_lazy('users:user_list')
+class UserUpdateView(AdminRequiredMixin, View):
+    template_name = 'users/user_form.html'
+
+    def _get_user(self, pk):
+        return get_object_or_404(get_user_model(), pk=pk)
+
+    def get(self, request, pk):
+        target_user = self._get_user(pk)
+        form = AdminUserForm(instance=target_user)
+        return render(request, self.template_name, {'form': form, 'target_user': target_user})
+
+    def post(self, request, pk):
+        target_user = self._get_user(pk)
+        if target_user.pk == request.user.pk and 'is_active' not in request.POST:
+            messages.error(request, 'No puedes desactivar tu propia cuenta.')
+            form = AdminUserForm(request.POST, instance=target_user)
+            return render(request, self.template_name, {'form': form, 'target_user': target_user})
+        form = AdminUserForm(request.POST, instance=target_user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Usuario "{target_user.username}" actualizado correctamente.')
+            return redirect(reverse('users:user_list'))
+        return render(request, self.template_name, {'form': form, 'target_user': target_user})
 
 
 class UserToggleActiveView(AdminRequiredMixin, View):
