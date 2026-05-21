@@ -4,8 +4,6 @@ from datetime import timedelta
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count
-from django.db.models.functions import ExtractIsoWeekDay, TruncMonth
-from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
@@ -128,97 +126,3 @@ class DashboardPacienteView(PacienteRequiredMixin, TemplateView):
             estado='PENDIENTE',
         ).count()
         return context
-
-
-# ── Chart API endpoints ────────────────────────────────────────────────────
-
-class CitasPorEspecialidadView(AdminRequiredMixin, View):
-    def get(self, request, *args, **kwargs):
-        data = (
-            Cita.objects.values('medico__especialidad__nombre')
-            .annotate(total=Count('id'))
-            .order_by('-total')
-        )
-        colors = [
-            '#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0',
-            '#6f42c1', '#fd7e14', '#20c997', '#d63384', '#6c757d',
-        ]
-        labels = [d['medico__especialidad__nombre'] or 'Sin especialidad' for d in data]
-        counts = [d['total'] for d in data]
-        return JsonResponse({
-            'labels': labels,
-            'datasets': [{
-                'label': 'Citas',
-                'data': counts,
-                'backgroundColor': colors[:len(labels)],
-            }],
-        })
-
-
-class PacientesPorMesView(AdminRequiredMixin, View):
-    def get(self, request, *args, **kwargs):
-        hace_6_meses = timezone.now() - timedelta(days=180)
-        data = (
-            Paciente.objects.filter(user__created_at__gte=hace_6_meses)
-            .annotate(mes=TruncMonth('user__created_at'))
-            .values('mes')
-            .annotate(total=Count('id'))
-            .order_by('mes')
-        )
-        nombres_mes = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-                       'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-        labels = [nombres_mes[d['mes'].month - 1] for d in data]
-        counts = [d['total'] for d in data]
-        return JsonResponse({
-            'labels': labels,
-            'datasets': [{
-                'label': 'Nuevos pacientes',
-                'data': counts,
-                'borderColor': '#0d6efd',
-                'backgroundColor': 'rgba(13, 110, 253, 0.15)',
-                'fill': True,
-                'tension': 0.4,
-            }],
-        })
-
-
-class CitasPorEstadoView(AdminRequiredMixin, View):
-    def get(self, request, *args, **kwargs):
-        estados = [
-            ('PENDIENTE', 'Pendiente', '#ffc107'),
-            ('CONFIRMADA', 'Confirmada', '#198754'),
-            ('CANCELADA', 'Cancelada', '#dc3545'),
-            ('COMPLETADA', 'Completada', '#0d6efd'),
-        ]
-        return JsonResponse({
-            'labels': [e[1] for e in estados],
-            'datasets': [{
-                'data': [Cita.objects.filter(estado=e[0]).count() for e in estados],
-                'backgroundColor': [e[2] for e in estados],
-                'borderWidth': 2,
-                'borderColor': '#fff',
-            }],
-        })
-
-
-class CitasPorDiaView(AdminRequiredMixin, View):
-    def get(self, request, *args, **kwargs):
-        # ExtractIsoWeekDay: 1=Lunes … 7=Domingo
-        data = (
-            Cita.objects.annotate(dia=ExtractIsoWeekDay('fecha_hora'))
-            .values('dia')
-            .annotate(total=Count('id'))
-            .order_by('dia')
-        )
-        dias = {1: 'Lun', 2: 'Mar', 3: 'Mié', 4: 'Jue', 5: 'Vie', 6: 'Sáb', 7: 'Dom'}
-        counts_by_day = {d['dia']: d['total'] for d in data}
-        return JsonResponse({
-            'labels': list(dias.values()),
-            'datasets': [{
-                'label': 'Citas',
-                'data': [counts_by_day.get(i, 0) for i in range(1, 8)],
-                'backgroundColor': '#0dcaf0',
-                'borderColor': '#0aa2c0',
-                'borderWidth': 1,
-            }],
-        })
