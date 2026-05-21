@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Mis Citas — SGH{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-calendar-heart me-2"></i>Mis Citas</h2>
+    <a href="{% url 'appointments:cita_create' %}" class="btn btn-success">
+      <i class="bi bi-plus-lg me-1"></i>Agendar Cita
+    </a>
+  </div>
+
+  <!-- ── Próximas citas ─────────────────────────────────────────────── -->
+  <h5 class="mb-3 text-primary fw-semibold">
+    <i class="bi bi-clock-history me-1"></i>Próximas Citas
+  </h5>
+
+  {% if proximas_citas %}
+  <div class="row g-3 mb-5">
+    {% for cita in proximas_citas %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="badge rounded-pill
+              {% if cita.estado == 'PENDIENTE' %}bg-warning text-dark
+              {% elif cita.estado == 'CONFIRMADA' %}bg-success
+              {% else %}bg-secondary{% endif %}">
+              {{ cita.get_estado_display }}
+            </span>
+            <small class="text-muted">{{ cita.fecha_hora|date:"d/m/Y" }}</small>
+          </div>
+
+          <h6 class="fw-semibold mb-1">{{ cita.medico.user.get_full_name }}</h6>
+          <p class="text-muted small mb-2">
+            <i class="bi bi-bookmark-star me-1"></i>{{ cita.medico.especialidad }}
+          </p>
+          <p class="mb-2">
+            <i class="bi bi-clock me-1 text-primary"></i>
+            <strong>{{ cita.fecha_hora|date:"H:i" }}</strong>
+            {% if cita.medico.consultorio %}
+            &nbsp;·&nbsp;Consultorio {{ cita.medico.consultorio }}
+            {% endif %}
+          </p>
+          <p class="text-muted small mb-3 text-truncate">
+            <i class="bi bi-chat-text me-1"></i>{{ cita.motivo }}
+          </p>
+        </div>
+        <div class="card-footer bg-transparent d-flex gap-2">
+          <a href="{% url 'appointments:cita_detail' cita.pk %}"
+             class="btn btn-sm btn-outline-info flex-fill">
+            <i class="bi bi-eye me-1"></i>Ver
+          </a>
+          {% if cita.estado == 'PENDIENTE' %}
+          <form method="post" action="{% url 'appointments:cita_cancel' cita.pk %}"
+                class="flex-fill"
+                onsubmit="return confirm('¿Cancelar esta cita?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+              <i class="bi bi-x-circle me-1"></i>Cancelar
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="alert alert-info d-flex align-items-center gap-3 mb-5">
+    <i class="bi bi-info-circle-fill fs-4"></i>
+    <div>
+      No tienes citas próximas programadas.
+      <a href="{% url 'appointments:cita_create' %}" class="alert-link">
+        Agenda tu primera cita
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Historial ──────────────────────────────────────────────────── -->
+  <h5 class="mb-3 text-secondary fw-semibold">
+    <i class="bi bi-archive me-1"></i>Historial
+    <small class="fw-normal text-muted">(últimas 10)</small>
+  </h5>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha</th>
+            <th>Médico</th>
+            <th>Especialidad</th>
+            <th>Motivo</th>
+            <th class="text-center">Estado</th>
+            <th class="text-end">Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cita in citas_pasadas %}
+          <tr>
+            <td class="text-nowrap">{{ cita.fecha_hora|date:"d/m/Y H:i" }}</td>
+            <td>{{ cita.medico.user.get_full_name }}</td>
+            <td>{{ cita.medico.especialidad }}</td>
+            <td class="text-truncate" style="max-width:180px">{{ cita.motivo }}</td>
+            <td class="text-center">
+              <span class="badge
+                {% if cita.estado == 'COMPLETADA' %}bg-success
+                {% elif cita.estado == 'CANCELADA' %}bg-danger
+                {% elif cita.estado == 'CONFIRMADA' %}bg-primary
+                {% else %}bg-warning text-dark{% endif %}">
+                {{ cita.get_estado_display }}
+              </span>
+            </td>
+            <td class="text-end">
+              <a href="{% url 'appointments:cita_detail' cita.pk %}"
+                 class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+              Sin historial de citas.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
