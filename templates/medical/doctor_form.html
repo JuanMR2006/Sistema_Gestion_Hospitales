@@ -30,6 +30,15 @@
           {% if field.errors %}
             <div class="text-danger small mt-1">{{ field.errors|join:", " }}</div>
           {% endif %}
+          <!-- Info del usuario seleccionado -->
+          {% if field.html_name == 'user' %}
+          <div id="user-info-card" class="mt-2 p-2 bg-light rounded border small" style="display:none;">
+            <i class="bi bi-person-circle me-1 text-primary"></i>
+            <span id="user-info-name" class="fw-semibold"></span>
+            &nbsp;·&nbsp;
+            <span id="user-info-email" class="text-muted"></span>
+          </div>
+          {% endif %}
         </div>
         {% endfor %}
         <div class="d-flex gap-2 mt-4">
@@ -44,4 +53,30 @@
     </div>
   </div>
 </div>
+
+<script>
+(function () {
+    const userSelect = document.getElementById('id_user');
+    const infoCard = document.getElementById('user-info-card');
+    const infoName = document.getElementById('user-info-name');
+    const infoEmail = document.getElementById('user-info-email');
+
+    function fetchUserInfo(pk) {
+        if (!pk) { infoCard.style.display = 'none'; return; }
+        fetch(`/users/${pk}/info/`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) { infoCard.style.display = 'none'; return; }
+                infoName.textContent = data.name;
+                infoEmail.textContent = data.email;
+                infoCard.style.display = 'block';
+            });
+    }
+
+    if (userSelect) {
+        userSelect.addEventListener('change', () => fetchUserInfo(userSelect.value));
+        fetchUserInfo(userSelect.value);
+    }
+})();
+</script>
 {% endblock %}

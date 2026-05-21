@@ -9,6 +9,19 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
+def _especialidad_choices():
+    from medical.models import Especialidad
+    return Especialidad.objects.filter(activa=True)
+
+
+GENERO_CHOICES = [('', '---------'), ('M', 'Masculino'), ('F', 'Femenino'), ('OTRO', 'Otro')]
+BLOOD_TYPE_CHOICES = [
+    ('', '---------'),
+    ('A+', 'A+'), ('A-', 'A-'), ('B+', 'B+'), ('B-', 'B-'),
+    ('O+', 'O+'), ('O-', 'O-'), ('AB+', 'AB+'), ('AB-', 'AB-'),
+]
+
+
 class LoginForm(forms.Form):
     username = forms.CharField(
         label='Usuario',
@@ -42,6 +55,45 @@ class RegisterForm(forms.ModelForm):
             'placeholder': 'Repite la contraseña',
         }),
     )
+    role = forms.ChoiceField(
+        label='Rol',
+        choices=[
+            (User.MEDICO, 'Médico'),
+            (User.PACIENTE, 'Paciente'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_role'}),
+    )
+    # Campos médico
+    especialidad = forms.ModelChoiceField(
+        queryset=None,
+        required=False,
+        label='Especialidad',
+        empty_label='Selecciona una especialidad',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    numero_licencia = forms.CharField(
+        required=False,
+        label='Número de Licencia',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. MED-12345'}),
+    )
+    # Campos paciente
+    fecha_nacimiento = forms.DateField(
+        required=False,
+        label='Fecha de Nacimiento',
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+    )
+    genero = forms.ChoiceField(
+        required=False,
+        label='Género',
+        choices=GENERO_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    blood_type = forms.ChoiceField(
+        required=False,
+        label='Tipo de Sangre',
+        choices=BLOOD_TYPE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
 
     class Meta:
         model = User
@@ -65,6 +117,10 @@ class RegisterForm(forms.ModelForm):
             }),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['especialidad'].queryset = _especialidad_choices()
+
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if email and User.objects.filter(email=email).exists():
@@ -77,12 +133,23 @@ class RegisterForm(forms.ModelForm):
         p2 = cleaned_data.get('password2')
         if p1 and p2 and p1 != p2:
             self.add_error('password2', 'Las contraseñas no coinciden.')
+        role = cleaned_data.get('role')
+        if role == User.MEDICO:
+            if not cleaned_data.get('especialidad'):
+                self.add_error('especialidad', 'Requerido para médicos.')
+            if not cleaned_data.get('numero_licencia'):
+                self.add_error('numero_licencia', 'Requerido para médicos.')
+        if role == User.PACIENTE:
+            if not cleaned_data.get('fecha_nacimiento'):
+                self.add_error('fecha_nacimiento', 'Requerido para pacientes.')
+            if not cleaned_data.get('genero'):
+                self.add_error('genero', 'Requerido para pacientes.')
         return cleaned_data
 
     def save(self, commit=True):
         user = super().save(commit=False)
         user.set_password(self.cleaned_data['password1'])
-        user.role = User.PACIENTE
+        user.role = self.cleaned_data['role']
         if commit:
             user.save()
         return user

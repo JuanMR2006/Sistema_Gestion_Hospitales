@@ -74,10 +74,26 @@ class RegisterView(View):
         if form.is_valid():
             try:
                 user = form.save()
+                if user.is_medico:
+                    from medical.models import Medico
+                    Medico.objects.create(
+                        user=user,
+                        especialidad=form.cleaned_data['especialidad'],
+                        numero_licencia=form.cleaned_data['numero_licencia'],
+                    )
+                elif user.is_paciente:
+                    from medical.models import HistoriaClinica, Paciente
+                    paciente = Paciente.objects.create(
+                        user=user,
+                        fecha_nacimiento=form.cleaned_data['fecha_nacimiento'],
+                        genero=form.cleaned_data['genero'],
+                        blood_type=form.cleaned_data.get('blood_type') or '',
+                    )
+                    HistoriaClinica.objects.create(paciente=paciente)
                 login(request, user)
                 display = user.get_full_name().strip() or user.username
                 messages.success(request, f'¡Bienvenido/a, {display}! Tu cuenta fue creada exitosamente.')
-                return redirect('/appointments/my/')
+                return _redirect_by_role(user)
             except IntegrityError:
                 logger.exception('IntegrityError al crear usuario en RegisterView')
                 messages.error(request, 'Ocurrió un error al crear la cuenta. Intenta nuevamente.')
@@ -163,6 +179,20 @@ class UserUpdateView(AdminRequiredMixin, View):
             messages.success(request, f'Usuario "{target_user.username}" actualizado correctamente.')
             return redirect(reverse('users:user_list'))
         return render(request, self.template_name, {'form': form, 'target_user': target_user})
+
+
+class UserInfoView(AdminRequiredMixin, View):
+    def get(self, request, pk):
+        User = get_user_model()
+        try:
+            user = User.objects.get(pk=pk)
+            return JsonResponse({
+                'name': user.get_full_name() or user.username,
+                'email': user.email,
+                'username': user.username,
+            })
+        except User.DoesNotExist:
+            return JsonResponse({}, status=404)
 
 
 class UserToggleActiveView(AdminRequiredMixin, View):

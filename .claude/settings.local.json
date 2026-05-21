@@ -17,7 +17,8 @@
       "Bash(\"C:/Users/juanj/Documents/Sistema_Gestion_Hospitales/venv/Scripts/pip.exe\" install *)",
       "Bash(echo \"EXIT: $?\")",
       "Bash(\"C:/Users/juanj/Documents/Sistema_Gestion_Hospitales/venv/Scripts/python.exe\" -m pip install openpyxl reportlab)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(C:/Users/juanj/Documents/Sistema_Gestion_Hospitales/venv/Scripts/python.exe *)"
     ]
   }
 }

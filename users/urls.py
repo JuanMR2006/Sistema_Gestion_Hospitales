@@ -5,6 +5,7 @@ from .views import (
     CustomLogoutView,
     ProfileView,
     RegisterView,
+    UserInfoView,
     UserListView,
     UserToggleActiveView,
     UserUpdateView,
@@ -20,4 +21,5 @@ urlpatterns = [
     path('', UserListView.as_view(), name='user_list'),
     path('<int:pk>/edit/', UserUpdateView.as_view(), name='user_update'),
     path('<int:pk>/toggle/', UserToggleActiveView.as_view(), name='user_toggle'),
+    path('<int:pk>/info/', UserInfoView.as_view(), name='user_info'),
 ]

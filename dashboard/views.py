@@ -33,8 +33,22 @@ class DashboardRedirectView(LoginRequiredMixin, View):
         if user.is_admin:
             return redirect(reverse('dashboard:admin_dashboard'))
         if user.is_medico:
+            if not hasattr(user, 'medico_profile'):
+                messages.warning(
+                    request,
+                    'Tu cuenta tiene rol Médico pero el perfil médico aún no fue creado. '
+                    'Un administrador debe ir a <b>/medical/doctors/new/</b> y vincularte.',
+                )
+                return redirect(reverse('users:profile'))
             return redirect(reverse('dashboard:medico_dashboard'))
         if user.is_paciente:
+            if not hasattr(user, 'paciente_profile'):
+                messages.warning(
+                    request,
+                    'Tu cuenta tiene rol Paciente pero el perfil de paciente aún no fue creado. '
+                    'Un administrador debe ir a <b>/medical/patients/new/</b> y vincularte.',
+                )
+                return redirect(reverse('users:profile'))
             return redirect(reverse('dashboard:paciente_dashboard'))
         return redirect(reverse('users:login'))
 
@@ -78,6 +92,12 @@ class DashboardAdminView(AdminRequiredMixin, TemplateView):
 class DashboardMedicoView(MedicoRequiredMixin, TemplateView):
     template_name = 'dashboard/medico_dashboard.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        if not hasattr(request.user, 'medico_profile'):
+            messages.warning(request, 'Tu perfil médico aún no está configurado.')
+            return redirect(reverse('users:profile'))
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         medico = self.request.user.medico_profile
@@ -111,6 +131,12 @@ class DashboardMedicoView(MedicoRequiredMixin, TemplateView):
 
 class DashboardPacienteView(PacienteRequiredMixin, TemplateView):
     template_name = 'dashboard/paciente_dashboard.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not hasattr(request.user, 'paciente_profile'):
+            messages.warning(request, 'Tu perfil de paciente aún no está configurado.')
+            return redirect(reverse('users:profile'))
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
