@@ -13,6 +13,7 @@ from django.views.generic import CreateView, DetailView, ListView
 from medical.models import Medico
 from users.mixins import AdminRequiredMixin, PacienteRequiredMixin
 
+from .exports import export_citas_excel, export_citas_pdf
 from .forms import CitaFilterForm, CitaForm, CitaUpdateMedicoForm, HorarioForm
 from .models import Cita, HorarioDisponible
 from .utils import send_appointment_email
@@ -81,7 +82,7 @@ class CitaCreateView(PacienteRequiredMixin, CreateView):
         try:
             send_appointment_email(cita, 'creada')
         except Exception as exc:
-            logger.error('Error enviando email cita #%s: %s', cita.pk, exc)
+            logger.warning('Error enviando email cita #%s: %s', cita.pk, exc)
 
         messages.success(self.request, 'Cita agendada correctamente.')
         return redirect(reverse('appointments:mis_citas'))
@@ -162,9 +163,9 @@ class CitaUpdateView(LoginRequiredMixin, View):
             cita = form.save()
             if cita.estado != old_estado:
                 try:
-                    send_appointment_email(cita, cita.estado)
+                    send_appointment_email(cita, cita.estado.lower())
                 except Exception as exc:
-                    logger.error('Error enviando email: %s', exc)
+                    logger.warning('Error enviando email: %s', exc)
             messages.success(request, 'Cita actualizada correctamente.')
             return redirect(reverse('appointments:cita_detail', kwargs={'pk': pk}))
 
@@ -201,9 +202,9 @@ class CitaCancelView(LoginRequiredMixin, View):
         cita.save(update_fields=['estado', 'updated_at'])
 
         try:
-            send_appointment_email(cita, Cita.CANCELADA)
+            send_appointment_email(cita, 'cancelada')
         except Exception as exc:
-            logger.error('Error enviando email cancelación cita #%s: %s', pk, exc)
+            logger.warning('Error enviando email cancelación cita #%s: %s', pk, exc)
 
         messages.success(request, 'Cita cancelada correctamente.')
         if user.is_paciente:
@@ -290,3 +291,46 @@ class HorarioDeleteView(AdminRequiredMixin, View):
         horario.delete()
         messages.success(request, 'Horario eliminado correctamente.')
         return redirect(reverse('medical:doctor_detail', kwargs={'pk': medico_pk}))
+
+
+# ─── Exportaciones ────────────────────────────────────────────────────────────
+
+def _build_export_queryset(request_get):
+    """Applies CitaFilterForm filters to a full Cita queryset (admin-only, no role filter).
+    Returns (filtered_qs, filtros_texto) where filtros_texto is a human-readable summary.
+    """
+    qs = Cita.objects.select_related(
+        'paciente__user', 'medico__user', 'medico__especialidad'
+    ).order_by('-fecha_hora')
+    form = CitaFilterForm(request_get or None)
+    filtros = []
+    if form.is_valid():
+        cd = form.cleaned_data
+        if cd.get('fecha_inicio'):
+            qs = qs.filter(fecha_hora__date__gte=cd['fecha_inicio'])
+            filtros.append(f"Desde {cd['fecha_inicio'].strftime('%d/%m/%Y')}")
+        if cd.get('fecha_fin'):
+            qs = qs.filter(fecha_hora__date__lte=cd['fecha_fin'])
+            filtros.append(f"Hasta {cd['fecha_fin'].strftime('%d/%m/%Y')}")
+        if cd.get('estado'):
+            qs = qs.filter(estado=cd['estado'])
+            filtros.append(f"Estado: {dict(Cita.ESTADO_CHOICES).get(cd['estado'], cd['estado'])}")
+        if cd.get('medico'):
+            qs = qs.filter(medico=cd['medico'])
+            filtros.append(f"Médico: {cd['medico']}")
+        if cd.get('especialidad'):
+            qs = qs.filter(medico__especialidad=cd['especialidad'])
+            filtros.append(f"Especialidad: {cd['especialidad']}")
+    return qs, ' | '.join(filtros)
+
+
+class ExportExcelView(AdminRequiredMixin, View):
+    def get(self, request):
+        qs, _ = _build_export_queryset(request.GET)
+        return export_citas_excel(qs)
+
+
+class ExportPDFView(AdminRequiredMixin, View):
+    def get(self, request):
+        qs, filtros_texto = _build_export_queryset(request.GET)
+        return export_citas_pdf(qs, filtros_texto)

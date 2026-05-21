@@ -17,11 +17,23 @@
       {% elif user.is_medico %}Mis Consultas
       {% else %}Mis Citas{% endif %}
     </h2>
-    {% if user.is_paciente %}
-    <a href="{% url 'appointments:cita_create' %}" class="btn btn-success">
-      <i class="bi bi-plus-lg me-1"></i>Nueva Cita
-    </a>
-    {% endif %}
+    <div class="d-flex gap-2 align-items-center">
+      {% if user.is_paciente %}
+      <a href="{% url 'appointments:cita_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-lg me-1"></i>Nueva Cita
+      </a>
+      {% endif %}
+      {% if user.is_admin %}
+      <a href="{% url 'appointments:export_excel' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+         class="btn btn-outline-success" title="Exportar a Excel">
+        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+      </a>
+      <a href="{% url 'appointments:export_pdf' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+         class="btn btn-outline-danger" title="Exportar a PDF">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+      </a>
+      {% endif %}
+    </div>
   </div>
 
   <!-- Filtros colapsables -->
