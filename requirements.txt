@@ -1,0 +1,8 @@
+Django==4.2.16
+psycopg2-binary==2.9.9
+python-decouple==3.8
+Pillow==10.4.0
+reportlab==4.2.2
+openpyxl==3.1.5
+whitenoise==6.7.0
+gunicorn==22.0.0
