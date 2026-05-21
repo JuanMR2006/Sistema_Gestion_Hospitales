@@ -1,12 +1,16 @@
 import logging
 
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.db import IntegrityError
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse_lazy
 from django.views import View
+from django.views.generic import ListView, UpdateView
 
-from .forms import LoginForm, RegisterForm
+from .forms import LoginForm, RegisterForm, UserUpdateForm
+from .mixins import AdminRequiredMixin
 
 logger = logging.getLogger(__name__)
 
@@ -76,3 +80,34 @@ class RegisterView(View):
                 logger.exception('IntegrityError al crear usuario en RegisterView')
                 messages.error(request, 'Ocurrió un error al crear la cuenta. Intenta nuevamente.')
         return render(request, self.template_name, {'form': form})
+
+
+# ── Vistas de gestión de usuarios (solo admin) ────────────────────────────────
+
+class UserListView(AdminRequiredMixin, ListView):
+    model = get_user_model()
+    template_name = 'users/user_list.html'
+    context_object_name = 'users'
+    ordering = ['last_name', 'first_name']
+
+
+class UserUpdateView(AdminRequiredMixin, UpdateView):
+    model = get_user_model()
+    form_class = UserUpdateForm
+    template_name = 'users/user_update.html'
+    success_url = reverse_lazy('users:user_list')
+
+
+class UserToggleActiveView(AdminRequiredMixin, View):
+    def post(self, request, pk):
+        if pk == request.user.pk:
+            return JsonResponse({'success': False, 'error': 'No puedes modificar tu propia cuenta.'})
+        User = get_user_model()
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Usuario no encontrado.'})
+        user.is_active = not user.is_active
+        user.save(update_fields=['is_active'])
+        estado = 'activado' if user.is_active else 'desactivado'
+        return JsonResponse({'success': True, 'is_active': user.is_active, 'message': f'Usuario {estado} correctamente.'})
