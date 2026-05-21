@@ -1,0 +1,613 @@
+{# templates/dashboard/admin_dashboard.html #}
+{% extends "base.html" %}
+
+{% block title %}Panel de Administración — Hospital System{% endblock %}
+
+{% block navbar %}{% endblock %}
+
+{% block content %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand fw-bold" href="{% url 'dashboard:home' %}">
+      <i class="bi bi-hospital me-1"></i>Hospital System
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navAdmin">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navAdmin">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link active" href="{% url 'dashboard:admin_dashboard' %}">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'dashboard:admin_panel' %}">
+            <i class="bi bi-sliders me-1"></i>Panel Admin
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'dashboard:search_pacientes' %}">
+            <i class="bi bi-search me-1"></i>Buscar Paciente
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'medical:doctor_list' %}">
+            <i class="bi bi-person-badge me-1"></i>Médicos
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'medical:patient_list' %}">
+            <i class="bi bi-people me-1"></i>Pacientes
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'appointments:cita_list' %}">
+            <i class="bi bi-calendar-check me-1"></i>Citas
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'users:user_list' %}">
+            <i class="bi bi-person-gear me-1"></i>Usuarios
+          </a>
+        </li>
+      </ul>
+      <ul class="navbar-nav">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle me-1"></i>{{ request.user.get_full_name|default:request.user.username }}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><h6 class="dropdown-header">Administrador</h6></li>
+            <li>
+              <a class="dropdown-item" href="{% url 'users:profile' %}">
+                <i class="bi bi-person me-2"></i>Mi Perfil
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <form method="post" action="{% url 'users:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item text-danger">
+                  <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
+                </button>
+              </form>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid px-4 py-4">
+
+  <div class="d-flex align-items-center mb-4">
+    <h1 class="h3 mb-0 me-3">
+      <i class="bi bi-speedometer2 text-primary me-2"></i>Panel de Administración
+    </h1>
+    <span class="badge bg-primary">Admin</span>
+  </div>
+
+  <!-- Sección 1: Cards de estadísticas -->
+  <div class="row g-3 mb-4">
+
+    <div class="col-md-3 col-sm-6">
+      <div class="card border-0 border-start border-primary border-4 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-primary text-uppercase fw-semibold small mb-1">Total Pacientes</div>
+              <div class="display-6 fw-bold text-dark">{{ total_pacientes }}</div>
+              <small class="text-muted">activos en el sistema</small>
+            </div>
+            <div class="ms-3 text-primary" style="opacity:.35;">
+              <i class="bi bi-people" style="font-size:2.8rem;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+      <div class="card border-0 border-start border-success border-4 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-success text-uppercase fw-semibold small mb-1">Total Médicos</div>
+              <div class="display-6 fw-bold text-dark">{{ total_medicos }}</div>
+              <small class="text-muted">{{ medicos_activos }} activos</small>
+            </div>
+            <div class="ms-3 text-success" style="opacity:.35;">
+              <i class="bi bi-person-badge" style="font-size:2.8rem;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+      <div class="card border-0 border-start border-warning border-4 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-warning text-uppercase fw-semibold small mb-1">Citas Hoy</div>
+              <div class="display-6 fw-bold text-dark">{{ citas_hoy|length }}</div>
+              <small class="text-muted">programadas para hoy</small>
+            </div>
+            <div class="ms-3 text-warning" style="opacity:.35;">
+              <i class="bi bi-calendar-check" style="font-size:2.8rem;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+      <div class="card border-0 border-start border-danger border-4 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-danger text-uppercase fw-semibold small mb-1">Pendientes</div>
+              <div class="display-6 fw-bold text-dark">{{ citas_pendientes }}</div>
+              <small class="text-muted">requieren confirmación</small>
+            </div>
+            <div class="ms-3 text-danger" style="opacity:.35;">
+              <i class="bi bi-clock" style="font-size:2.8rem;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Acceso rápido -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6 col-lg-3">
+      <a href="{% url 'dashboard:admin_panel' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="bg-primary bg-opacity-10 rounded-3 p-3">
+              <i class="bi bi-sliders text-primary" style="font-size:1.6rem;"></i>
+            </div>
+            <div>
+              <div class="fw-semibold text-dark">Panel de Administración</div>
+              <div class="text-muted small">Gestionar y filtrar citas</div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <a href="{% url 'dashboard:search_pacientes' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="bg-info bg-opacity-10 rounded-3 p-3">
+              <i class="bi bi-search text-info" style="font-size:1.6rem;"></i>
+            </div>
+            <div>
+              <div class="fw-semibold text-dark">Buscar Paciente</div>
+              <div class="text-muted small">Búsqueda rápida en tiempo real</div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <a href="{% url 'medical:doctor_create' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="bg-success bg-opacity-10 rounded-3 p-3">
+              <i class="bi bi-person-plus text-success" style="font-size:1.6rem;"></i>
+            </div>
+            <div>
+              <div class="fw-semibold text-dark">Registrar Médico</div>
+              <div class="text-muted small">Crear perfil y vincular cuenta</div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <a href="{% url 'medical:patient_create' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="bg-warning bg-opacity-10 rounded-3 p-3">
+              <i class="bi bi-person-add text-warning" style="font-size:1.6rem;"></i>
+            </div>
+            <div>
+              <div class="fw-semibold text-dark">Registrar Paciente</div>
+              <div class="text-muted small">Crear perfil y vincular cuenta</div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Sección 2: Gráficos principales -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 fw-semibold">
+            <i class="bi bi-bar-chart-horizontal me-2 text-primary"></i>Citas por Especialidad
+          </h6>
+        </div>
+        <div class="card-body">
+          <canvas id="chartEspecialidad" height="300"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 fw-semibold">
+            <i class="bi bi-pie-chart me-2 text-primary"></i>Estado de Citas
+          </h6>
+        </div>
+        <div class="card-body d-flex align-items-center justify-content-center">
+          <canvas id="chartEstado" height="300"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección 3: Gráficos secundarios -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-7">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 fw-semibold">
+            <i class="bi bi-graph-up me-2 text-primary"></i>Pacientes Nuevos por Mes
+          </h6>
+        </div>
+        <div class="card-body">
+          <canvas id="chartPacientes" height="280"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-5">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 fw-semibold">
+            <i class="bi bi-bar-chart me-2 text-primary"></i>Citas por Día de la Semana
+          </h6>
+        </div>
+        <div class="card-body">
+          <canvas id="chartDia" height="280"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección 4: Tablas -->
+  <div class="row g-3">
+
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-semibold">
+            <i class="bi bi-list-check me-2 text-primary"></i>Últimas 10 Citas
+          </h6>
+          <a href="{% url 'appointments:cita_list' %}" class="btn btn-sm btn-outline-primary">
+            Ver todas
+          </a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-3">Paciente</th>
+                  <th>Médico</th>
+                  <th>Especialidad</th>
+                  <th>Fecha</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for cita in ultimas_citas %}
+                <tr>
+                  <td class="ps-3">
+                    <div class="fw-semibold small">{{ cita.paciente.user.get_full_name }}</div>
+                  </td>
+                  <td>
+                    <div class="small">{{ cita.medico.user.get_full_name }}</div>
+                  </td>
+                  <td>
+                    <span class="badge bg-secondary">{{ cita.medico.especialidad }}</span>
+                  </td>
+                  <td>
+                    <div class="small">{{ cita.fecha_hora|date:"d/m/Y" }}</div>
+                    <div class="text-muted" style="font-size:.75rem;">{{ cita.fecha_hora|time:"H:i" }}</div>
+                  </td>
+                  <td>
+                    {% if cita.estado == 'PENDIENTE' %}
+                      <span class="badge bg-warning text-dark">Pendiente</span>
+                    {% elif cita.estado == 'CONFIRMADA' %}
+                      <span class="badge bg-success">Confirmada</span>
+                    {% elif cita.estado == 'CANCELADA' %}
+                      <span class="badge bg-danger">Cancelada</span>
+                    {% elif cita.estado == 'COMPLETADA' %}
+                      <span class="badge bg-primary">Completada</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted py-4">No hay citas registradas.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 fw-semibold">
+            <i class="bi bi-trophy me-2 text-warning"></i>Top 5 Médicos
+          </h6>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3">#</th>
+                <th>Médico</th>
+                <th>Especialidad</th>
+                <th class="text-end pe-3">Citas</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for medico in top_medicos %}
+              <tr>
+                <td class="ps-3 fw-bold text-muted">{{ forloop.counter }}</td>
+                <td>
+                  <div class="small fw-semibold">{{ medico.user.get_full_name }}</div>
+                  <div class="progress mt-1" style="height:4px;">
+                    <div class="progress-bar bg-primary"
+                         style="width:{% widthratio medico.total_citas max_citas_medico 100 %}%">
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border small">{{ medico.especialidad }}</span>
+                </td>
+                <td class="text-end pe-3 fw-bold">{{ medico.total_citas }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-4">Sin datos.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script>
+  Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+
+  // Dibuja un mensaje de error directamente en el canvas
+  function mostrarError(canvasId, msg = 'No se pudieron cargar los datos') {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.font = '14px "Segoe UI", system-ui, sans-serif';
+    ctx.fillStyle = '#adb5bd';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(msg, canvas.width / 2, canvas.height / 2);
+    ctx.restore();
+  }
+
+  // ── Chart 1: Citas por Especialidad (barras horizontales) ──────────────
+  async function cargarChartEspecialidad() {
+    try {
+      const res = await fetch('/dashboard/charts/citas-por-especialidad/');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();   // { labels, data, months }
+
+      const palette = [
+        '#0d6efd','#198754','#ffc107','#dc3545','#0dcaf0',
+        '#6f42c1','#fd7e14','#20c997','#d63384','#6c757d',
+      ];
+      const bgColors = palette.slice(0, json.labels.length);
+
+      new Chart(document.getElementById('chartEspecialidad'), {
+        type: 'bar',
+        plugins: [ChartDataLabels],
+        data: {
+          labels: json.labels,
+          datasets: [{
+            label: 'Citas',
+            data: json.data,
+            backgroundColor: bgColors,
+            borderRadius: 4,
+          }],
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 800 },
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: true,
+              text: `Últimos ${json.months} meses`,
+              color: '#6c757d',
+              font: { size: 12, weight: 'normal' },
+              padding: { bottom: 6 },
+            },
+            datalabels: {
+              anchor: 'end',
+              align: 'start',
+              offset: 6,
+              color: '#fff',
+              font: { weight: 'bold', size: 11 },
+              formatter: (v) => v > 0 ? v : '',
+            },
+          },
+          scales: {
+            x: { beginAtZero: true, ticks: { precision: 0 } },
+          },
+        },
+      });
+    } catch (err) {
+      console.error('Error cargando chart especialidad:', err);
+      mostrarError('chartEspecialidad');
+    }
+  }
+
+  // ── Chart 2: Pacientes Nuevos por Mes (línea con área) ─────────────────
+  async function cargarChartPacientes() {
+    try {
+      const res = await fetch('/dashboard/charts/pacientes-por-mes/');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();   // { labels, data }
+
+      new Chart(document.getElementById('chartPacientes'), {
+        type: 'line',
+        data: {
+          labels: json.labels,
+          datasets: [{
+            label: 'Nuevos pacientes',
+            data: json.data,
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#0d6efd',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 800 },
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+        },
+      });
+    } catch (err) {
+      console.error('Error cargando chart pacientes:', err);
+      mostrarError('chartPacientes');
+    }
+  }
+
+  // ── Chart 3: Estado de Citas (dona) ────────────────────────────────────
+  async function cargarChartEstado() {
+    try {
+      const res = await fetch('/dashboard/charts/citas-por-estado/');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();   // { labels, data, colors }
+
+      new Chart(document.getElementById('chartEstado'), {
+        type: 'doughnut',
+        data: {
+          labels: json.labels,
+          datasets: [{
+            data: json.data,
+            backgroundColor: json.colors,
+            borderWidth: 3,
+            borderColor: '#fff',
+            hoverOffset: 8,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 800 },
+          cutout: '65%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { padding: 16, boxWidth: 14, font: { size: 12 } },
+            },
+            tooltip: {
+              callbacks: {
+                label(context) {
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const pct = total > 0
+                    ? ((context.raw / total) * 100).toFixed(1)
+                    : '0.0';
+                  return ` ${context.label}: ${context.raw} (${pct}%)`;
+                },
+              },
+            },
+          },
+        },
+      });
+    } catch (err) {
+      console.error('Error cargando chart estado:', err);
+      mostrarError('chartEstado');
+    }
+  }
+
+  // ── Chart 4: Citas por Día de la Semana (barras verticales) ────────────
+  async function cargarChartDia() {
+    try {
+      const res = await fetch('/dashboard/charts/citas-por-dia/');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();   // { labels, data }
+
+      // El día con más citas se resalta en azul primario
+      const maxVal = Math.max(...json.data);
+      const bgColors = json.data.map(
+        (v) => (v === maxVal && maxVal > 0) ? '#0d6efd' : '#0dcaf0'
+      );
+
+      new Chart(document.getElementById('chartDia'), {
+        type: 'bar',
+        data: {
+          labels: json.labels,
+          datasets: [{
+            label: 'Citas',
+            data: json.data,
+            backgroundColor: bgColors,
+            borderRadius: 4,
+            borderSkipped: false,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 800 },
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+        },
+      });
+    } catch (err) {
+      console.error('Error cargando chart día:', err);
+      mostrarError('chartDia');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    cargarChartEspecialidad();
+    cargarChartPacientes();
+    cargarChartEstado();
+    cargarChartDia();
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Cita #{{ cita.pk }} — SGH{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="d-flex align-items-center mb-4">
+    {% if user.is_paciente %}
+    <a href="{% url 'appointments:mis_citas' %}" class="btn btn-outline-secondary btn-sm me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    {% else %}
+    <a href="{% url 'appointments:cita_list' %}" class="btn btn-outline-secondary btn-sm me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    {% endif %}
+    <h2 class="mb-0">Detalle de Cita <span class="text-muted">#{{ cita.pk }}</span></h2>
+
+    <!-- Badge de estado grande -->
+    <span class="badge fs-6 ms-3
+      {% if cita.estado == 'PENDIENTE' %}bg-warning text-dark
+      {% elif cita.estado == 'CONFIRMADA' %}bg-success
+      {% elif cita.estado == 'CANCELADA' %}bg-danger
+      {% else %}bg-primary{% endif %}">
+      {{ cita.get_estado_display }}
+    </span>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Información de la cita -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-primary text-white">
+          <i class="bi bi-calendar-event me-2"></i>Información de la Cita
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-5 text-muted">Paciente</dt>
+            <dd class="col-7 fw-semibold">{{ cita.paciente.user.get_full_name }}</dd>
+
+            <dt class="col-5 text-muted">Médico</dt>
+            <dd class="col-7">{{ cita.medico.user.get_full_name }}</dd>
+
+            <dt class="col-5 text-muted">Especialidad</dt>
+            <dd class="col-7">{{ cita.medico.especialidad }}</dd>
+
+            <dt class="col-5 text-muted">Consultorio</dt>
+            <dd class="col-7">{{ cita.medico.consultorio|default:"—" }}</dd>
+
+            <dt class="col-5 text-muted">Fecha y hora</dt>
+            <dd class="col-7 fw-semibold">{{ cita.fecha_hora|date:"d/m/Y H:i" }}</dd>
+
+            <dt class="col-5 text-muted">Motivo</dt>
+            <dd class="col-7">{{ cita.motivo }}</dd>
+
+            {% if cita.notas_medico %}
+            <dt class="col-5 text-muted">Notas médico</dt>
+            <dd class="col-7">{{ cita.notas_medico }}</dd>
+            {% endif %}
+
+            <dt class="col-5 text-muted">Agendada el</dt>
+            <dd class="col-7">{{ cita.created_at|date:"d/m/Y H:i" }}</dd>
+          </dl>
+        </div>
+        <div class="card-footer bg-transparent d-flex gap-2 flex-wrap">
+          {% if can_cancel %}
+          <form method="post" action="{% url 'appointments:cita_cancel' cita.pk %}"
+                class="d-inline"
+                onsubmit="return confirm('¿Estás seguro de cancelar esta cita?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">
+              <i class="bi bi-x-circle me-1"></i>Cancelar cita
+            </button>
+          </form>
+          {% endif %}
+          {% if user.is_admin or user.is_medico %}
+          <a href="{% url 'appointments:cita_update' cita.pk %}"
+             class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-pencil me-1"></i>Editar
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección Actualizar (solo médico / admin) -->
+    {% if update_form %}
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-info text-white">
+          <i class="bi bi-pencil-square me-2"></i>Actualizar Estado
+        </div>
+        <div class="card-body">
+          <form method="post" action="{% url 'appointments:cita_update' cita.pk %}" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="{{ update_form.estado.id_for_label }}">
+                {{ update_form.estado.label }}
+              </label>
+              {{ update_form.estado }}
+              {% if update_form.estado.errors %}
+                <div class="text-danger small mt-1">{{ update_form.estado.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="{{ update_form.notas_medico.id_for_label }}">
+                {{ update_form.notas_medico.label }}
+              </label>
+              {{ update_form.notas_medico }}
+              {% if update_form.notas_medico.errors %}
+                <div class="text-danger small mt-1">{{ update_form.notas_medico.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-info text-white">
+              <i class="bi bi-floppy me-1"></i>Guardar cambios
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

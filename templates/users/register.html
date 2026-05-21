@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Crear Cuenta — Hospital{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5">
+    <div class="card shadow-sm border-0" style="width: 100%; max-width: 540px;">
+        <div class="card-body p-4 p-md-5">
+
+            <div class="text-center mb-4">
+                <i class="bi bi-person-plus-fill text-success" style="font-size: 3rem;"></i>
+                <h4 class="mt-3 fw-bold mb-1">Crear Cuenta</h4>
+                <p class="text-muted small">Elige tu rol en el sistema</p>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show py-2" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Nombre</label>
+                        {{ form.first_name }}
+                        {% for e in form.first_name.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Apellido</label>
+                        {{ form.last_name }}
+                        {% for e in form.last_name.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Correo electrónico</label>
+                    {{ form.email }}
+                    {% for e in form.email.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Nombre de usuario</label>
+                    {{ form.username }}
+                    {% for e in form.username.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Rol</label>
+                    {{ form.role }}
+                    {% for e in form.role.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+                </div>
+
+                <!-- Campos exclusivos para Médico -->
+                <div id="campos-medico" style="display:none;">
+                    <div class="alert alert-info py-2 small mb-3">
+                        <i class="bi bi-person-badge me-1"></i>Datos del médico
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Especialidad <span class="text-danger">*</span></label>
+                        {{ form.especialidad }}
+                        {% for e in form.especialidad.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Número de Licencia <span class="text-danger">*</span></label>
+                        {{ form.numero_licencia }}
+                        {% for e in form.numero_licencia.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+                    </div>
+                </div>
+
+                <!-- Campos exclusivos para Paciente -->
+                <div id="campos-paciente" style="display:none;">
+                    <div class="alert alert-success py-2 small mb-3">
+                        <i class="bi bi-heart-pulse me-1"></i>Datos del paciente
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Fecha de Nacimiento <span class="text-danger">*</span></label>
+                        {{ form.fecha_nacimiento }}
+                        {% for e in form.fecha_nacimiento.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Género <span class="text-danger">*</span></label>
+                            {{ form.genero }}
+                            {% for e in form.genero.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Tipo de Sangre</label>
+                            {{ form.blood_type }}
+                            {% for e in form.blood_type.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Contraseña</label>
+                        {{ form.password1 }}
+                        {% for e in form.password1.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Confirmar</label>
+                        {{ form.password2 }}
+                        {% for e in form.password2.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+                    </div>
+                </div>
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger py-2 small">
+                    {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+                </div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-success w-100 py-2 mt-1">
+                    <i class="bi bi-person-check me-1"></i> Registrarse
+                </button>
+            </form>
+
+            <hr class="my-4">
+            <p class="text-center text-muted small mb-0">
+                ¿Ya tienes cuenta?
+                <a href="{% url 'users:login' %}" class="text-decoration-none fw-semibold">Inicia sesión</a>
+            </p>
+
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const roleSelect = document.getElementById('id_role');
+    const camposMedico = document.getElementById('campos-medico');
+    const camposPaciente = document.getElementById('campos-paciente');
+
+    function toggleCampos() {
+        const rol = roleSelect.value;
+        camposMedico.style.display = rol === 'MEDICO' ? 'block' : 'none';
+        camposPaciente.style.display = rol === 'PACIENTE' ? 'block' : 'none';
+    }
+
+    roleSelect.addEventListener('change', toggleCampos);
+    toggleCampos(); // ejecutar al cargar por si hubo error de validación
+})();
+</script>
+{% endblock %}

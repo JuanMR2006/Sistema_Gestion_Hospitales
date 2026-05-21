@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Usuarios{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-4">
+
+  <!-- Encabezado -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0 fw-semibold">
+      <i class="bi bi-people me-2 text-primary"></i>Gestión de Usuarios
+    </h2>
+    <a href="{% url 'users:register' %}" class="btn btn-primary">
+      <i class="bi bi-person-plus me-1"></i>Nuevo Usuario
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label small text-muted mb-1">Buscar</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" name="q" value="{{ current_filters.q }}"
+                   class="form-control border-start-0"
+                   placeholder="Nombre, apellido, email o usuario…">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted mb-1">Rol</label>
+          <select name="role" class="form-select">
+            <option value="">Todos los roles</option>
+            {% for value, label in roles %}
+              <option value="{{ value }}" {% if current_filters.role == value %}selected{% endif %}>
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted mb-1">Estado</label>
+          <select name="is_active" class="form-select">
+            <option value="">Todos</option>
+            <option value="true"  {% if current_filters.is_active == 'true'  %}selected{% endif %}>Activos</option>
+            <option value="false" {% if current_filters.is_active == 'false' %}selected{% endif %}>Inactivos</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-outline-primary w-100">
+            <i class="bi bi-funnel me-1"></i>Filtrar
+          </button>
+        </div>
+        {% if current_filters.q or current_filters.role or current_filters.is_active %}
+        <div class="col-md-1">
+          <a href="{% url 'users:user_list' %}" class="btn btn-outline-secondary w-100" title="Limpiar filtros">
+            <i class="bi bi-x-lg"></i>
+          </a>
+        </div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Nombre</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Fecha registro</th>
+            <th class="text-center pe-3">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr id="row-{{ u.pk }}">
+            <td class="ps-3">
+              <div class="d-flex align-items-center gap-2">
+                {% if u.photo %}
+                  <img src="{{ u.photo.url }}"
+                       class="rounded-circle flex-shrink-0 object-fit-cover"
+                       style="width:34px;height:34px;">
+                {% else %}
+                  <i class="bi bi-person-circle text-secondary flex-shrink-0" style="font-size:1.6rem;"></i>
+                {% endif %}
+                <div>
+                  <div class="fw-semibold lh-sm">{{ u.get_full_name|default:u.username }}</div>
+                  <div class="text-muted small">@{{ u.username }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="text-muted small">{{ u.email|default:"—" }}</td>
+            <td>
+              {% if u.role == 'ADMIN' %}
+                <span class="badge bg-danger">{{ u.get_role_display }}</span>
+              {% elif u.role == 'MEDICO' %}
+                <span class="badge bg-primary">{{ u.get_role_display }}</span>
+              {% else %}
+                <span class="badge bg-success">{{ u.get_role_display }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge {% if u.is_active %}bg-success{% else %}bg-secondary{% endif %}"
+                    id="badge-active-{{ u.pk }}">
+                {% if u.is_active %}Activo{% else %}Inactivo{% endif %}
+              </span>
+            </td>
+            <td class="text-muted small">{{ u.created_at|date:"d/m/Y" }}</td>
+            <td class="text-center pe-3">
+              <a href="{% url 'users:user_update' u.pk %}"
+                 class="btn btn-sm btn-outline-primary"
+                 title="Editar usuario">
+                <i class="bi bi-pencil"></i>
+              </a>
+              {% if u.pk != request.user.pk %}
+              <button class="btn btn-sm {% if u.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %} ms-1"
+                      id="toggle-btn-{{ u.pk }}"
+                      onclick="toggleActive({{ u.pk }}, '{% url 'users:user_toggle' u.pk %}')"
+                      title="{% if u.is_active %}Desactivar{% else %}Activar{% endif %}">
+                <i class="bi {% if u.is_active %}bi-toggle-on{% else %}bi-toggle-off{% endif %}"></i>
+              </button>
+              {% else %}
+              <button class="btn btn-sm btn-outline-secondary ms-1" disabled title="Esta es tu propia cuenta">
+                <i class="bi bi-lock"></i>
+              </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-5">
+              <i class="bi bi-people fs-1 d-block mb-2 opacity-25"></i>
+              No se encontraron usuarios con los filtros aplicados.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  {% if is_paginated %}
+  <nav class="mt-4 d-flex justify-content-center" aria-label="Paginación">
+    <ul class="pagination mb-0">
+
+      <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+        <a class="page-link" href="?{% if filter_query_string %}{{ filter_query_string }}&{% endif %}page={{ page_obj.previous_page_number }}">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+      </li>
+
+      {% for num in page_obj.paginator.page_range %}
+      <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+        <a class="page-link" href="?{% if filter_query_string %}{{ filter_query_string }}&{% endif %}page={{ num }}">
+          {{ num }}
+        </a>
+      </li>
+      {% endfor %}
+
+      <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+        <a class="page-link" href="?{% if filter_query_string %}{{ filter_query_string }}&{% endif %}page={{ page_obj.next_page_number }}">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      </li>
+
+    </ul>
+  </nav>
+  {% endif %}
+
+</div>
+
+<!-- Contenedor de toasts para feedback del toggle -->
+<div id="toast-container"
+     class="position-fixed bottom-0 end-0 p-3"
+     style="z-index: 1090;">
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCsrfToken() {
+  return (document.cookie.split(';')
+    .find(c => c.trim().startsWith('csrftoken=')) ?? '=')
+    .split('=')[1];
+}
+
+async function toggleActive(pk, url) {
+  const btn = document.getElementById(`toggle-btn-${pk}`);
+  btn.disabled = true;
+
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCsrfToken(),
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    });
+
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    if (!data.success) {
+      showToast(data.error, 'danger');
+      return;
+    }
+
+    // Actualizar badge de estado
+    const badge = document.getElementById(`badge-active-${pk}`);
+    if (data.is_active) {
+      badge.className = 'badge bg-success';
+      badge.textContent = 'Activo';
+      btn.className = 'btn btn-sm btn-outline-warning ms-1';
+      btn.title = 'Desactivar';
+      btn.querySelector('i').className = 'bi bi-toggle-on';
+    } else {
+      badge.className = 'badge bg-secondary';
+      badge.textContent = 'Inactivo';
+      btn.className = 'btn btn-sm btn-outline-success ms-1';
+      btn.title = 'Activar';
+      btn.querySelector('i').className = 'bi bi-toggle-off';
+    }
+
+    showToast(data.message, 'success');
+  } catch (err) {
+    showToast('Error de conexión. Intenta nuevamente.', 'danger');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function showToast(message, type) {
+  const id = 'toast-' + Date.now();
+  document.getElementById('toast-container').insertAdjacentHTML('beforeend', `
+    <div id="${id}" class="toast align-items-center text-bg-${type} border-0 show shadow" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">${message}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                onclick="this.closest('.toast').remove()"></button>
+      </div>
+    </div>
+  `);
+  setTimeout(() => document.getElementById(id)?.remove(), 4000);
+}
+</script>
+{% endblock %}

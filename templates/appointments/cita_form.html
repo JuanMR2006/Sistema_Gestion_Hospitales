@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Cita Médica — SGH{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 640px;">
+
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'appointments:mis_citas' %}" class="btn btn-outline-secondary btn-sm me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h2 class="mb-0"><i class="bi bi-calendar-plus me-2"></i>Nueva Cita Médica</h2>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Médico -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="{{ form.medico.id_for_label }}">
+            {{ form.medico.label }} <span class="text-danger">*</span>
+          </label>
+          {{ form.medico }}
+          {% if form.medico.errors %}
+            <div class="text-danger small mt-1">{{ form.medico.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Fecha y hora -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="{{ form.fecha_hora.id_for_label }}">
+            {{ form.fecha_hora.label }} <span class="text-danger">*</span>
+          </label>
+          {{ form.fecha_hora }}
+          <div class="form-text">Selecciona una fecha y hora futura.</div>
+          {% if form.fecha_hora.errors %}
+            <div class="text-danger small mt-1">{{ form.fecha_hora.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Motivo -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="{{ form.motivo.id_for_label }}">
+            {{ form.motivo.label }} <span class="text-danger">*</span>
+          </label>
+          {{ form.motivo }}
+          {% if form.motivo.errors %}
+            <div class="text-danger small mt-1">{{ form.motivo.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors|join:", " }}
+        </div>
+        {% endif %}
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-calendar-check me-1"></i>Agendar Cita
+          </button>
+          <a href="{% url 'appointments:mis_citas' %}" class="btn btn-outline-secondary">
+            Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

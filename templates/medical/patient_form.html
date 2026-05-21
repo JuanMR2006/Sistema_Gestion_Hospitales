@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Editar Paciente{% else %}Nuevo Paciente{% endif %} — SGH{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 720px;">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'medical:patient_list' %}" class="btn btn-outline-secondary btn-sm me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h2 class="mb-0">
+      {% if object %}Editar Paciente{% else %}Nuevo Paciente{% endif %}
+    </h2>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="{{ field.id_for_label }}">
+            {{ field.label }}
+            {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+          </label>
+          {{ field }}
+          {% if field.help_text %}
+            <div class="form-text">{{ field.help_text }}</div>
+          {% endif %}
+          {% if field.errors %}
+            <div class="text-danger small mt-1">{{ field.errors|join:", " }}</div>
+          {% endif %}
+          <!-- Info del usuario seleccionado -->
+          {% if field.html_name == 'user' %}
+          <div id="user-info-card" class="mt-2 p-2 bg-light rounded border small" style="display:none;">
+            <i class="bi bi-person-circle me-1 text-success"></i>
+            <span id="user-info-name" class="fw-semibold"></span>
+            &nbsp;·&nbsp;
+            <span id="user-info-email" class="text-muted"></span>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>Guardar
+          </button>
+          <a href="{% url 'medical:patient_list' %}" class="btn btn-outline-secondary">
+            Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+    const userSelect = document.getElementById('id_user');
+    const infoCard = document.getElementById('user-info-card');
+    const infoName = document.getElementById('user-info-name');
+    const infoEmail = document.getElementById('user-info-email');
+
+    function fetchUserInfo(pk) {
+        if (!pk) { infoCard.style.display = 'none'; return; }
+        fetch(`/users/${pk}/info/`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) { infoCard.style.display = 'none'; return; }
+                infoName.textContent = data.name;
+                infoEmail.textContent = data.email;
+                infoCard.style.display = 'block';
+            });
+    }
+
+    if (userSelect) {
+        userSelect.addEventListener('change', () => fetchUserInfo(userSelect.value));
+        fetchUserInfo(userSelect.value);
+    }
+})();
+</script>
+{% endblock %}

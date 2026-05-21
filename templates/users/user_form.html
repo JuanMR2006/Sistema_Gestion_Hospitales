@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Usuario: {{ target_user.username }}{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 760px;">
+
+  <!-- Encabezado con breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{% url 'users:user_list' %}" class="text-decoration-none">
+          <i class="bi bi-people me-1"></i>Usuarios
+        </a>
+      </li>
+      <li class="breadcrumb-item active">Editar</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <h2 class="mb-0 fw-semibold">
+      Editar Usuario:
+      <code class="fs-4 text-primary">{{ target_user.username }}</code>
+    </h2>
+    {% if target_user.is_active %}
+      <span class="badge bg-success">Activo</span>
+    {% else %}
+      <span class="badge bg-secondary">Inactivo</span>
+    {% endif %}
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+
+      <form method="post" id="edit-form" novalidate>
+        {% csrf_token %}
+
+        <div class="row g-3">
+
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold" for="{{ form.first_name.id_for_label }}">Nombre</label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+              <div class="invalid-feedback d-block">{{ form.first_name.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold" for="{{ form.last_name.id_for_label }}">Apellido</label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}
+              <div class="invalid-feedback d-block">{{ form.last_name.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold" for="{{ form.username.id_for_label }}">Nombre de usuario</label>
+            {{ form.username }}
+            {% if form.username.errors %}
+              <div class="invalid-feedback d-block">{{ form.username.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold" for="{{ form.email.id_for_label }}">Correo electrónico</label>
+            {{ form.email }}
+            {% if form.email.errors %}
+              <div class="invalid-feedback d-block">{{ form.email.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold" for="{{ form.phone.id_for_label }}">Teléfono</label>
+            {{ form.phone }}
+            {% if form.phone.errors %}
+              <div class="invalid-feedback d-block">{{ form.phone.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold" for="{{ form.role.id_for_label }}">Rol</label>
+            {{ form.role }}
+            {% if form.role.errors %}
+              <div class="invalid-feedback d-block">{{ form.role.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-12">
+            <div class="form-check form-switch pt-1">
+              {{ form.is_active }}
+              <label class="form-check-label fw-semibold" for="{{ form.is_active.id_for_label }}">
+                Usuario activo
+              </label>
+              <div class="form-text text-muted">
+                Los usuarios inactivos no pueden iniciar sesión.
+              </div>
+              {% if form.is_active.errors %}
+                <div class="invalid-feedback d-block">{{ form.is_active.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if form.non_field_errors %}
+          <div class="col-12">
+            <div class="alert alert-danger py-2 mb-0">{{ form.non_field_errors }}</div>
+          </div>
+          {% endif %}
+
+        </div>
+
+        <hr class="my-4">
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary px-5" id="save-btn">
+            <i class="bi bi-save me-1"></i>Guardar cambios
+          </button>
+          <a href="{% url 'users:user_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-x me-1"></i>Cancelar
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal de confirmación: desactivar usuario -->
+<div class="modal fade" id="deactivateModal" tabindex="-1" aria-labelledby="deactivateModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-warning-subtle border-0">
+        <h5 class="modal-title" id="deactivateModalLabel">
+          <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+          Confirmar desactivación
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        ¿Estás seguro de que quieres <strong>desactivar</strong> al usuario
+        <strong>{{ target_user.username }}</strong>?
+        No podrá iniciar sesión hasta que sea reactivado.
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" id="confirm-deactivate">
+          <i class="bi bi-person-dash me-1"></i>Sí, desactivar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const form = document.getElementById('edit-form');
+  {% if target_user.is_active %}
+  const isActiveCheck = document.getElementById('{{ form.is_active.id_for_label }}');
+  const modal = new bootstrap.Modal(document.getElementById('deactivateModal'));
+  let confirmed = false;
+
+  form.addEventListener('submit', function (e) {
+    if (!isActiveCheck.checked && !confirmed) {
+      e.preventDefault();
+      modal.show();
+    }
+  });
+
+  document.getElementById('confirm-deactivate').addEventListener('click', function () {
+    confirmed = true;
+    modal.hide();
+    form.submit();
+  });
+  {% endif %}
+})();
+</script>
+{% endblock %}

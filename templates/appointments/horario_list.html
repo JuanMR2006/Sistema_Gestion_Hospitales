@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Horarios — {{ medico }} — SGH{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'medical:doctor_detail' medico.pk %}"
+       class="btn btn-outline-secondary btn-sm me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h2 class="mb-0">Horarios Disponibles</h2>
+      <small class="text-muted">{{ medico }}</small>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Lista de horarios -->
+    <div class="col-md-7">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <strong>Horarios registrados</strong>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Día</th>
+                <th>Hora inicio</th>
+                <th>Hora fin</th>
+                <th class="text-center">Activo</th>
+                <th class="text-end">Eliminar</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for h in horarios %}
+              <tr>
+                <td>{{ h.get_dia_semana_display }}</td>
+                <td>{{ h.hora_inicio }}</td>
+                <td>{{ h.hora_fin }}</td>
+                <td class="text-center">
+                  {% if h.activo %}
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                  {% else %}
+                    <i class="bi bi-x-circle-fill text-secondary"></i>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <form method="post"
+                        action="{% url 'appointments:horario_delete' h.pk %}"
+                        onsubmit="return confirm('¿Eliminar este horario?')">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                  Sin horarios registrados.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario nuevo horario -->
+    <div class="col-md-5">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <i class="bi bi-plus-circle me-2"></i>Agregar Horario
+        </div>
+        <div class="card-body p-4">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="{{ form.dia_semana.id_for_label }}">
+                {{ form.dia_semana.label }}
+              </label>
+              {{ form.dia_semana }}
+              {% if form.dia_semana.errors %}
+                <div class="text-danger small mt-1">{{ form.dia_semana.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="{{ form.hora_inicio.id_for_label }}">
+                {{ form.hora_inicio.label }}
+              </label>
+              {{ form.hora_inicio }}
+              {% if form.hora_inicio.errors %}
+                <div class="text-danger small mt-1">{{ form.hora_inicio.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="{{ form.hora_fin.id_for_label }}">
+                {{ form.hora_fin.label }}
+              </label>
+              {{ form.hora_fin }}
+              {% if form.hora_fin.errors %}
+                <div class="text-danger small mt-1">{{ form.hora_fin.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3 form-check">
+              {{ form.activo }}
+              <label class="form-check-label fw-semibold" for="{{ form.activo.id_for_label }}">
+                {{ form.activo.label }}
+              </label>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger small">{{ form.non_field_errors|join:", " }}</div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>Agregar
+              </button>
+              <a href="{% url 'medical:doctor_detail' medico.pk %}"
+                 class="btn btn-outline-secondary">
+                Volver
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
