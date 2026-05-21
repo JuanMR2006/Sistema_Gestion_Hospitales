@@ -1,11 +1,13 @@
 # medical/urls.py
 from django.urls import path
+from django.views.generic import RedirectView
 
 from . import views
 
 app_name = 'medical'
 
 urlpatterns = [
+    path('', RedirectView.as_view(pattern_name='medical:doctor_list', permanent=False)),
     # Especialidades
     path('especialidades/', views.EspecialidadListView.as_view(), name='especialidad_list'),
     path('especialidades/new/', views.EspecialidadCreateView.as_view(), name='especialidad_create'),

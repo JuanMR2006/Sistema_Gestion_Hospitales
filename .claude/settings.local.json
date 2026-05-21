@@ -12,7 +12,12 @@
       "Bash(not exist *)",
       "PowerShell(cd \"D:\\\\DOCUMENTOS\\\\Sistema_Gestion_Hospitales\"; $env:DJANGO_SETTINGS_MODULE=\"hospital_system.settings\"; & \"D:\\\\DOCUMENTOS\\\\Sistema_Gestion_Hospitales\\\\venv\\\\Scripts\\\\python.exe\" -c \"import django; django.setup\\(\\); from dashboard import views, urls; print\\('OK - views y urls importados correctamente'\\)\")",
       "PowerShell(& \"D:\\\\DOCUMENTOS\\\\Sistema_Gestion_Hospitales\\\\venv\\\\Scripts\\\\python.exe\" --version 2>&1; Write-Host \"Exit: $LASTEXITCODE\")",
-      "PowerShell(Get-Command *)"
+      "PowerShell(Get-Command *)",
+      "Bash(venv/Scripts/pip install *)",
+      "Bash(\"C:/Users/juanj/Documents/Sistema_Gestion_Hospitales/venv/Scripts/pip.exe\" install *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(\"C:/Users/juanj/Documents/Sistema_Gestion_Hospitales/venv/Scripts/python.exe\" -m pip install openpyxl reportlab)",
+      "Bash(echo \"EXIT:$?\")"
     ]
   }
 }
