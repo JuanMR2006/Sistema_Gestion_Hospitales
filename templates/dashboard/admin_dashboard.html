@@ -322,89 +322,208 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script>
   Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
 
+  // Dibuja un mensaje de error directamente en el canvas
+  function mostrarError(canvasId, msg = 'No se pudieron cargar los datos') {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.font = '14px "Segoe UI", system-ui, sans-serif';
+    ctx.fillStyle = '#adb5bd';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(msg, canvas.width / 2, canvas.height / 2);
+    ctx.restore();
+  }
+
+  // ── Chart 1: Citas por Especialidad (barras horizontales) ──────────────
   async function cargarChartEspecialidad() {
     try {
       const res = await fetch('/dashboard/charts/citas-por-especialidad/');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const json = await res.json();   // { labels, data, months }
+
+      const palette = [
+        '#0d6efd','#198754','#ffc107','#dc3545','#0dcaf0',
+        '#6f42c1','#fd7e14','#20c997','#d63384','#6c757d',
+      ];
+      const bgColors = palette.slice(0, json.labels.length);
+
       new Chart(document.getElementById('chartEspecialidad'), {
         type: 'bar',
-        data: data,
+        plugins: [ChartDataLabels],
+        data: {
+          labels: json.labels,
+          datasets: [{
+            label: 'Citas',
+            data: json.data,
+            backgroundColor: bgColors,
+            borderRadius: 4,
+          }],
+        },
         options: {
           indexAxis: 'y',
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { x: { beginAtZero: true, ticks: { precision: 0 } } },
+          animation: { duration: 800 },
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: true,
+              text: `Últimos ${json.months} meses`,
+              color: '#6c757d',
+              font: { size: 12, weight: 'normal' },
+              padding: { bottom: 6 },
+            },
+            datalabels: {
+              anchor: 'end',
+              align: 'start',
+              offset: 6,
+              color: '#fff',
+              font: { weight: 'bold', size: 11 },
+              formatter: (v) => v > 0 ? v : '',
+            },
+          },
+          scales: {
+            x: { beginAtZero: true, ticks: { precision: 0 } },
+          },
         },
       });
     } catch (err) {
       console.error('Error cargando chart especialidad:', err);
+      mostrarError('chartEspecialidad');
     }
   }
 
+  // ── Chart 2: Pacientes Nuevos por Mes (línea con área) ─────────────────
   async function cargarChartPacientes() {
     try {
       const res = await fetch('/dashboard/charts/pacientes-por-mes/');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const json = await res.json();   // { labels, data }
+
       new Chart(document.getElementById('chartPacientes'), {
         type: 'line',
-        data: data,
+        data: {
+          labels: json.labels,
+          datasets: [{
+            label: 'Nuevos pacientes',
+            data: json.data,
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#0d6efd',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+          }],
+        },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: { duration: 800 },
           plugins: { legend: { display: false } },
           scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
         },
       });
     } catch (err) {
       console.error('Error cargando chart pacientes:', err);
+      mostrarError('chartPacientes');
     }
   }
 
+  // ── Chart 3: Estado de Citas (dona) ────────────────────────────────────
   async function cargarChartEstado() {
     try {
       const res = await fetch('/dashboard/charts/citas-por-estado/');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const json = await res.json();   // { labels, data, colors }
+
       new Chart(document.getElementById('chartEstado'), {
         type: 'doughnut',
-        data: data,
+        data: {
+          labels: json.labels,
+          datasets: [{
+            data: json.data,
+            backgroundColor: json.colors,
+            borderWidth: 3,
+            borderColor: '#fff',
+            hoverOffset: 8,
+          }],
+        },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: { duration: 800 },
           cutout: '65%',
           plugins: {
-            legend: { position: 'bottom', labels: { padding: 12, boxWidth: 14 } },
+            legend: {
+              position: 'bottom',
+              labels: { padding: 16, boxWidth: 14, font: { size: 12 } },
+            },
+            tooltip: {
+              callbacks: {
+                label(context) {
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const pct = total > 0
+                    ? ((context.raw / total) * 100).toFixed(1)
+                    : '0.0';
+                  return ` ${context.label}: ${context.raw} (${pct}%)`;
+                },
+              },
+            },
           },
         },
       });
     } catch (err) {
       console.error('Error cargando chart estado:', err);
+      mostrarError('chartEstado');
     }
   }
 
+  // ── Chart 4: Citas por Día de la Semana (barras verticales) ────────────
   async function cargarChartDia() {
     try {
       const res = await fetch('/dashboard/charts/citas-por-dia/');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const json = await res.json();   // { labels, data }
+
+      // El día con más citas se resalta en azul primario
+      const maxVal = Math.max(...json.data);
+      const bgColors = json.data.map(
+        (v) => (v === maxVal && maxVal > 0) ? '#0d6efd' : '#0dcaf0'
+      );
+
       new Chart(document.getElementById('chartDia'), {
         type: 'bar',
-        data: data,
+        data: {
+          labels: json.labels,
+          datasets: [{
+            label: 'Citas',
+            data: json.data,
+            backgroundColor: bgColors,
+            borderRadius: 4,
+            borderSkipped: false,
+          }],
+        },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: { duration: 800 },
           plugins: { legend: { display: false } },
           scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
         },
       });
     } catch (err) {
       console.error('Error cargando chart día:', err);
+      mostrarError('chartDia');
     }
   }
 
