@@ -1,0 +1,246 @@
+{# templates/dashboard/search_results.html #}
+{% extends "base.html" %}
+
+{% block title %}Buscador de Pacientes — Hospital System{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{% url 'dashboard:admin_dashboard' %}" class="text-decoration-none">
+          <i class="bi bi-house me-1"></i>Inicio
+        </a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Buscador de Pacientes</li>
+    </ol>
+  </nav>
+
+  <!-- Encabezado -->
+  <div class="d-flex align-items-center mb-4">
+    <h1 class="h3 mb-0 me-3">
+      <i class="bi bi-search text-primary me-2"></i>Buscador de Pacientes
+    </h1>
+  </div>
+
+  <!-- Card de búsqueda -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <form method="get" action="" id="searchForm" autocomplete="off">
+        <div class="input-group input-group-lg">
+          <span class="input-group-text bg-white border-end-0">
+            <i class="bi bi-search text-muted"></i>
+          </span>
+          <input
+            type="text"
+            id="searchInput"
+            name="q"
+            value="{{ q|default:'' }}"
+            class="form-control border-start-0 ps-0"
+            placeholder="Buscar por nombre, email o teléfono..."
+            aria-label="Buscar paciente"
+          >
+          <button type="submit" class="btn btn-primary px-4">
+            Buscar
+          </button>
+        </div>
+        <p class="text-muted small mt-2 mb-0">
+          <i class="bi bi-info-circle me-1"></i>Ingresa al menos 2 caracteres para buscar
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Spinner -->
+  <div id="searchSpinner" class="text-center py-4 d-none">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p class="text-muted small mt-2">Buscando pacientes...</p>
+  </div>
+
+  <!-- Sección de resultados -->
+  <div id="resultsSection">
+    {% if q %}
+      {% if resultados %}
+      <div class="mb-3">
+        <p class="text-muted mb-0">
+          <strong class="text-dark">{{ total }}</strong>
+          paciente{% if total != 1 %}s{% endif %} encontrado{% if total != 1 %}s{% endif %} para:
+          <span class="fw-semibold text-primary">{{ q }}</span>
+        </p>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="resultsTable">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-3">Nombre</th>
+                  <th>Email</th>
+                  <th>Teléfono</th>
+                  <th>Última Cita</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in resultados %}
+                <tr>
+                  <td class="ps-3 fw-semibold small">{{ r.nombre }}</td>
+                  <td class="small text-muted">{{ r.email }}</td>
+                  <td class="small text-muted">{{ r.telefono|default:"—" }}</td>
+                  <td class="small text-muted">{{ r.ultima_cita }}</td>
+                  <td class="text-center">
+                    <a href="{{ r.url_detalle }}"
+                       class="btn btn-sm btn-outline-primary me-1"
+                       title="Ver perfil">
+                      <i class="bi bi-person me-1"></i>Ver Perfil
+                    </a>
+                    <a href="{{ r.url_detalle }}#citas"
+                       class="btn btn-sm btn-outline-secondary"
+                       title="Ver citas">
+                      <i class="bi bi-calendar3 me-1"></i>Ver Citas
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {% else %}
+      <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div>
+          No se encontraron pacientes para
+          <strong>{{ q }}</strong>.
+          Intenta con otro nombre, email o teléfono.
+        </div>
+      </div>
+      {% endif %}
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const input = document.getElementById('searchInput');
+  const spinner = document.getElementById('searchSpinner');
+  const section = document.getElementById('resultsSection');
+  const searchUrl = "{% url 'dashboard:search_pacientes' %}";
+  let debounceTimer = null;
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function renderResults(data, query) {
+    if (data.length === 0) {
+      section.innerHTML = `
+        <div class="alert alert-warning d-flex align-items-center" role="alert">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          <div>No se encontraron pacientes para <strong>${escapeHtml(query)}</strong>.</div>
+        </div>`;
+      return;
+    }
+
+    const plural = data.length !== 1;
+    let rows = data.map(r => `
+      <tr>
+        <td class="ps-3 fw-semibold small">${escapeHtml(r.nombre)}</td>
+        <td class="small text-muted">${escapeHtml(r.email)}</td>
+        <td class="small text-muted">${escapeHtml(r.telefono || '—')}</td>
+        <td class="small text-muted">${escapeHtml(r.ultima_cita)}</td>
+        <td class="text-center">
+          <a href="${escapeHtml(r.url_detalle)}"
+             class="btn btn-sm btn-outline-primary me-1">
+            <i class="bi bi-person me-1"></i>Ver Perfil
+          </a>
+          <a href="${escapeHtml(r.url_detalle)}#citas"
+             class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-calendar3 me-1"></i>Ver Citas
+          </a>
+        </td>
+      </tr>`).join('');
+
+    section.innerHTML = `
+      <div class="mb-3">
+        <p class="text-muted mb-0">
+          <strong class="text-dark">${data.length}</strong>
+          paciente${plural ? 's' : ''} encontrado${plural ? 's' : ''} para:
+          <span class="fw-semibold text-primary">${escapeHtml(query)}</span>
+        </p>
+      </div>
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-3">Nombre</th>
+                  <th>Email</th>
+                  <th>Teléfono</th>
+                  <th>Última Cita</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function doSearch(query) {
+    spinner.classList.remove('d-none');
+    section.innerHTML = '';
+
+    fetch(`${searchUrl}?q=${encodeURIComponent(query)}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(res => res.json())
+      .then(data => {
+        spinner.classList.add('d-none');
+        renderResults(data, query);
+      })
+      .catch(() => {
+        spinner.classList.add('d-none');
+        section.innerHTML = `
+          <div class="alert alert-danger" role="alert">
+            <i class="bi bi-x-circle me-1"></i>Error al realizar la búsqueda. Intenta nuevamente.
+          </div>`;
+      });
+  }
+
+  input.addEventListener('input', function () {
+    clearTimeout(debounceTimer);
+    const query = this.value.trim();
+
+    if (query.length === 0) {
+      spinner.classList.add('d-none');
+      section.innerHTML = '';
+      return;
+    }
+
+    if (query.length < 2) {
+      return;
+    }
+
+    debounceTimer = setTimeout(() => doSearch(query), 400);
+  });
+})();
+</script>
+{% endblock %}
