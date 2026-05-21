@@ -14,4 +14,6 @@ urlpatterns = [
     path('my/', views.MisCitasView.as_view(), name='mis_citas'),
     path('horarios/<int:medico_pk>/', views.HorarioListView.as_view(), name='horario_list'),
     path('horarios/<int:pk>/delete/', views.HorarioDeleteView.as_view(), name='horario_delete'),
+    path('export/excel/', views.ExportExcelView.as_view(), name='export_excel'),
+    path('export/pdf/', views.ExportPDFView.as_view(), name='export_pdf'),
 ]
