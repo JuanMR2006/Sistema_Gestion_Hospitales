@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}{{ medico }} — SGH{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'medical:doctor_list' %}" class="btn btn-outline-secondary btn-sm me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h2 class="mb-0">Detalle del Médico</h2>
+    {% if user.is_admin %}
+    <a href="{% url 'medical:doctor_update' medico.pk %}" class="btn btn-outline-secondary btn-sm ms-auto">
+      <i class="bi bi-pencil me-1"></i>Editar
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="row g-4">
+    <!-- Datos del médico -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-primary text-white">
+          <i class="bi bi-person-badge me-2"></i>Información del Médico
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-5 text-muted">Nombre</dt>
+            <dd class="col-7 fw-semibold">{{ medico.user.get_full_name }}</dd>
+
+            <dt class="col-5 text-muted">Email</dt>
+            <dd class="col-7">{{ medico.user.email }}</dd>
+
+            <dt class="col-5 text-muted">Especialidad</dt>
+            <dd class="col-7">{{ medico.especialidad }}</dd>
+
+            <dt class="col-5 text-muted">N.º Licencia</dt>
+            <dd class="col-7"><code>{{ medico.numero_licencia }}</code></dd>
+
+            <dt class="col-5 text-muted">Consultorio</dt>
+            <dd class="col-7">{{ medico.consultorio|default:"—" }}</dd>
+
+            {% if medico.bio %}
+            <dt class="col-5 text-muted">Biografía</dt>
+            <dd class="col-7">{{ medico.bio }}</dd>
+            {% endif %}
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Horarios disponibles -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-info text-white">
+          <i class="bi bi-calendar3 me-2"></i>Horarios Disponibles
+        </div>
+        <div class="card-body">
+          {% if horarios %}
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr>
+                  <th>Día</th>
+                  <th>Hora inicio</th>
+                  <th>Hora fin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for h in horarios %}
+                <tr>
+                  <td>{{ h.dia }}</td>
+                  <td>{{ h.hora_inicio }}</td>
+                  <td>{{ h.hora_fin }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">Sin horarios registrados aún.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

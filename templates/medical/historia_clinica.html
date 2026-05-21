@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Historia Clínica — {{ paciente }} — SGH{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 800px;">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'medical:patient_detail' paciente.pk %}" class="btn btn-outline-secondary btn-sm me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h2 class="mb-0">Historia Clínica</h2>
+      <small class="text-muted">Paciente: <strong>{{ paciente }}</strong></small>
+    </div>
+    {% if can_edit %}
+    <span class="badge bg-success ms-auto">Modo edición</span>
+    {% else %}
+    <span class="badge bg-secondary ms-auto">Solo lectura</span>
+    {% endif %}
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-header">
+      <small class="text-muted">
+        Última actualización: {{ historia.updated_at|date:"d/m/Y H:i" }}
+      </small>
+    </div>
+    <div class="card-body p-4">
+
+      {% if can_edit %}
+      <!-- Vista editable para admin y médico -->
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold" for="{{ form.alergias.id_for_label }}">
+            <i class="bi bi-exclamation-triangle text-warning me-1"></i>Alergias
+          </label>
+          {{ form.alergias }}
+          {% if form.alergias.errors %}
+            <div class="text-danger small mt-1">{{ form.alergias.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold" for="{{ form.enfermedades_cronicas.id_for_label }}">
+            <i class="bi bi-heart-pulse text-danger me-1"></i>Enfermedades crónicas
+          </label>
+          {{ form.enfermedades_cronicas }}
+          {% if form.enfermedades_cronicas.errors %}
+            <div class="text-danger small mt-1">{{ form.enfermedades_cronicas.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold" for="{{ form.medicamentos_actuales.id_for_label }}">
+            <i class="bi bi-capsule text-primary me-1"></i>Medicamentos actuales
+          </label>
+          {{ form.medicamentos_actuales }}
+          {% if form.medicamentos_actuales.errors %}
+            <div class="text-danger small mt-1">{{ form.medicamentos_actuales.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold" for="{{ form.antecedentes_familiares.id_for_label }}">
+            <i class="bi bi-people text-secondary me-1"></i>Antecedentes familiares
+          </label>
+          {{ form.antecedentes_familiares }}
+          {% if form.antecedentes_familiares.errors %}
+            <div class="text-danger small mt-1">{{ form.antecedentes_familiares.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-floppy me-1"></i>Guardar cambios
+          </button>
+          <a href="{% url 'medical:patient_detail' paciente.pk %}" class="btn btn-outline-secondary">
+            Cancelar
+          </a>
+        </div>
+      </form>
+
+      {% else %}
+      <!-- Vista solo lectura para paciente -->
+      {% with campos=historia %}
+
+      <div class="mb-4">
+        <h6 class="fw-semibold text-muted">
+          <i class="bi bi-exclamation-triangle text-warning me-1"></i>Alergias
+        </h6>
+        {% if historia.alergias %}
+          <p class="mb-0">{{ historia.alergias|linebreaksbr }}</p>
+        {% else %}
+          <p class="text-muted fst-italic mb-0">Sin registros aún</p>
+        {% endif %}
+      </div>
+      <hr>
+
+      <div class="mb-4">
+        <h6 class="fw-semibold text-muted">
+          <i class="bi bi-heart-pulse text-danger me-1"></i>Enfermedades crónicas
+        </h6>
+        {% if historia.enfermedades_cronicas %}
+          <p class="mb-0">{{ historia.enfermedades_cronicas|linebreaksbr }}</p>
+        {% else %}
+          <p class="text-muted fst-italic mb-0">Sin registros aún</p>
+        {% endif %}
+      </div>
+      <hr>
+
+      <div class="mb-4">
+        <h6 class="fw-semibold text-muted">
+          <i class="bi bi-capsule text-primary me-1"></i>Medicamentos actuales
+        </h6>
+        {% if historia.medicamentos_actuales %}
+          <p class="mb-0">{{ historia.medicamentos_actuales|linebreaksbr }}</p>
+        {% else %}
+          <p class="text-muted fst-italic mb-0">Sin registros aún</p>
+        {% endif %}
+      </div>
+      <hr>
+
+      <div class="mb-0">
+        <h6 class="fw-semibold text-muted">
+          <i class="bi bi-people text-secondary me-1"></i>Antecedentes familiares
+        </h6>
+        {% if historia.antecedentes_familiares %}
+          <p class="mb-0">{{ historia.antecedentes_familiares|linebreaksbr }}</p>
+        {% else %}
+          <p class="text-muted fst-italic mb-0">Sin registros aún</p>
+        {% endif %}
+      </div>
+
+      {% endwith %}
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}
