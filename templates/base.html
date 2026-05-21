@@ -21,6 +21,123 @@
     </div>
     {% endif %}
 
+    {% block navbar %}
+    {% if user.is_authenticated %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+      <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" href="{% url 'dashboard:home' %}">
+          <i class="bi bi-hospital me-1"></i>Hospital System
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navMain">
+          <ul class="navbar-nav me-auto">
+            {% if user.is_admin %}
+            <li class="nav-item">
+              <a class="nav-link{% if request.resolver_match.url_name == 'admin_dashboard' %} active{% endif %}"
+                 href="{% url 'dashboard:admin_dashboard' %}">
+                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link{% if request.resolver_match.url_name == 'admin_panel' %} active{% endif %}"
+                 href="{% url 'dashboard:admin_panel' %}">
+                <i class="bi bi-sliders me-1"></i>Panel Admin
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link{% if request.resolver_match.url_name == 'search_pacientes' %} active{% endif %}"
+                 href="{% url 'dashboard:search_pacientes' %}">
+                <i class="bi bi-search me-1"></i>Buscar Paciente
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'medical:doctor_list' %}">
+                <i class="bi bi-person-badge me-1"></i>Médicos
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'medical:patient_list' %}">
+                <i class="bi bi-people me-1"></i>Pacientes
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'appointments:cita_list' %}">
+                <i class="bi bi-calendar-check me-1"></i>Citas
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'users:user_list' %}">
+                <i class="bi bi-person-gear me-1"></i>Usuarios
+              </a>
+            </li>
+            {% elif user.is_medico %}
+            <li class="nav-item">
+              <a class="nav-link{% if request.resolver_match.url_name == 'medico_dashboard' %} active{% endif %}"
+                 href="{% url 'dashboard:medico_dashboard' %}">
+                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'appointments:cita_list' %}">
+                <i class="bi bi-calendar-check me-1"></i>Mis Citas
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link{% if request.resolver_match.url_name == 'search_pacientes' %} active{% endif %}"
+                 href="{% url 'dashboard:search_pacientes' %}">
+                <i class="bi bi-search me-1"></i>Buscar Paciente
+              </a>
+            </li>
+            {% elif user.is_paciente %}
+            <li class="nav-item">
+              <a class="nav-link{% if request.resolver_match.url_name == 'paciente_dashboard' %} active{% endif %}"
+                 href="{% url 'dashboard:paciente_dashboard' %}">
+                <i class="bi bi-house me-1"></i>Inicio
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'appointments:mis_citas' %}">
+                <i class="bi bi-calendar-check me-1"></i>Mis Citas
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'appointments:cita_create' %}">
+                <i class="bi bi-plus-circle me-1"></i>Nueva Cita
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+          <ul class="navbar-nav">
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                <i class="bi bi-person-circle me-1"></i>{{ user.get_full_name|default:user.username }}
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="{% url 'users:profile' %}">
+                    <i class="bi bi-person me-2"></i>Mi Perfil
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <form method="post" action="{% url 'users:logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="dropdown-item text-danger">
+                      <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
+                    </button>
+                  </form>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    {% endif %}
+    {% endblock %}
+
     {% block content %}{% endblock %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
