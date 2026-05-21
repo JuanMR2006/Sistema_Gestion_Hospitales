@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}{{ paciente }} — SGH{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'medical:patient_list' %}" class="btn btn-outline-secondary btn-sm me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h2 class="mb-0">Detalle del Paciente</h2>
+    {% if user.is_admin %}
+    <a href="{% url 'medical:patient_update' paciente.pk %}" class="btn btn-outline-secondary btn-sm ms-auto me-2">
+      <i class="bi bi-pencil me-1"></i>Editar
+    </a>
+    {% endif %}
+    {% if user.is_admin or user.is_medico %}
+    <a href="{% url 'medical:historia_clinica' paciente.pk %}" class="btn btn-outline-success btn-sm {% if not user.is_admin %}ms-auto{% endif %}">
+      <i class="bi bi-file-medical me-1"></i>Historia Clínica
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="row g-4">
+    <!-- Datos personales -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-primary text-white">
+          <i class="bi bi-person me-2"></i>Datos Personales
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-5 text-muted">Nombre</dt>
+            <dd class="col-7 fw-semibold">{{ paciente.user.get_full_name }}</dd>
+
+            <dt class="col-5 text-muted">Email</dt>
+            <dd class="col-7">{{ paciente.user.email }}</dd>
+
+            <dt class="col-5 text-muted">Teléfono</dt>
+            <dd class="col-7">{{ paciente.user.phone|default:"—" }}</dd>
+
+            <dt class="col-5 text-muted">F. Nacimiento</dt>
+            <dd class="col-7">{{ paciente.fecha_nacimiento }}</dd>
+
+            <dt class="col-5 text-muted">Género</dt>
+            <dd class="col-7">{{ paciente.get_genero_display }}</dd>
+
+            <dt class="col-5 text-muted">Grupo sanguíneo</dt>
+            <dd class="col-7">{{ paciente.blood_type|default:"—" }}</dd>
+
+            <dt class="col-5 text-muted">Dirección</dt>
+            <dd class="col-7">{{ paciente.direccion|default:"—" }}</dd>
+
+            <dt class="col-5 text-muted">Contacto emergencia</dt>
+            <dd class="col-7">{{ paciente.contacto_emergencia|default:"—" }}</dd>
+
+            <dt class="col-5 text-muted">Tel. emergencia</dt>
+            <dd class="col-7">{{ paciente.telefono_emergencia|default:"—" }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen historia clínica -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-success text-white">
+          <i class="bi bi-file-medical me-2"></i>Resumen Historia Clínica
+        </div>
+        <div class="card-body">
+          {% if historia %}
+          <dl class="row mb-0">
+            <dt class="col-12 text-muted mb-1">Alergias</dt>
+            <dd class="col-12 mb-3">
+              {% if historia.alergias %}
+                {{ historia.alergias|truncatewords:15 }}
+              {% else %}
+                <span class="text-muted fst-italic">Sin registros aún</span>
+              {% endif %}
+            </dd>
+            <dt class="col-12 text-muted mb-1">Enfermedades crónicas</dt>
+            <dd class="col-12 mb-3">
+              {% if historia.enfermedades_cronicas %}
+                {{ historia.enfermedades_cronicas|truncatewords:15 }}
+              {% else %}
+                <span class="text-muted fst-italic">Sin registros aún</span>
+              {% endif %}
+            </dd>
+            <dt class="col-12 text-muted mb-1">Medicamentos actuales</dt>
+            <dd class="col-12 mb-0">
+              {% if historia.medicamentos_actuales %}
+                {{ historia.medicamentos_actuales|truncatewords:15 }}
+              {% else %}
+                <span class="text-muted fst-italic">Sin registros aún</span>
+              {% endif %}
+            </dd>
+          </dl>
+          {% else %}
+          <p class="text-muted mb-0">Historia clínica no disponible.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Últimas citas -->
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">
+          <i class="bi bi-calendar-check me-2"></i>Últimas 5 Citas
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Fecha</th>
+                <th>Médico</th>
+                <th>Estado</th>
+                <th>Motivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cita in ultimas_citas %}
+              <tr>
+                <td>{{ cita.fecha }}</td>
+                <td>{{ cita.medico }}</td>
+                <td>
+                  <span class="badge
+                    {% if cita.estado == 'COMPLETADA' %}bg-success
+                    {% elif cita.estado == 'CANCELADA' %}bg-danger
+                    {% elif cita.estado == 'PENDIENTE' %}bg-warning text-dark
+                    {% else %}bg-secondary{% endif %}">
+                    {{ cita.get_estado_display|default:cita.estado }}
+                  </span>
+                </td>
+                <td>{{ cita.motivo|default:"—" }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-3">
+                  Sin citas registradas.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

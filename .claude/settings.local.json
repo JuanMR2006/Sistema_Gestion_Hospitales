@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python manage.py test users --verbosity=2)"
+      "Bash(python manage.py test users --verbosity=2)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\JUANSE\\\\Documents\\\\Sistema_Gestion_Hospitales\" -Depth 0 -Force)",
+      "Bash(Select-Object Name, FullName)",
+      "Bash(python manage.py check --deploy)",
+      "Bash(python manage.py check)",
+      "PowerShell($env:DJANGO_SETTINGS_MODULE = \"hospital_system.settings\"; cd \"C:\\\\Users\\\\JUANSE\\\\Documents\\\\Sistema_Gestion_Hospitales\"; & \".\\\\venv\\\\Scripts\\\\python.exe\" manage.py check 2>&1)"
     ]
   }
 }
